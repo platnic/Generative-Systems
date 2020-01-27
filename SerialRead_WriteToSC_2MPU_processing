@@ -1,0 +1,132 @@
+import processing.serial.*;
+import oscP5.*;
+import netP5.*;
+OscP5 oscP5;
+NetAddress sc;
+
+// Code originally by Odis Harkins
+// http://odisharkins.com/robotics/gyro-arduino-processing/
+
+Serial myPort;       
+int linefeed = 10;   // Linefeed in ASCII
+int numSensors = 9;  // we will be expecting for reading data from 6 sensors
+int index = 0;  // index for sample array writting
+
+float sensors[];       // array to read the 9 values
+float[] sensors_map = new float[9];
+float pSensors[];   
+String str= "";
+float[][] y;
+String sensor_number[]= {"Ang.x1", "Ang.y1","Ang.z1","Acc.x1", "Acc.y1", "Acc.z1","Ang.x2", "Ang.y2","Ang.z2"}; 
+int interLine = 60;
+boolean firstTime = true;
+
+
+void setup() {
+  size(920, 960);
+//  size(920, 960, P3D);
+
+
+    y = new float[numSensors][width];
+    
+  // List all the available serial ports in the output pane. 
+  // You will need to choose the port that the Wiring board is 
+  // connected to from this list. The first port in the list is 
+  // port #0 and the third port in the list is port #2. 
+  //println(Serial.list()); 
+  printArray(Serial.list());  // List all the available serial ports
+  
+  
+  // michel: was originally myPort = new Serial(this, Serial.list()[1], 115200);
+  myPort = new Serial(this, Serial.list()[0], 115200);
+  // read bytes into a buffer until you get a linefeed (ASCII 10):
+  myPort.bufferUntil(linefeed);
+  oscP5= new OscP5(this, 12000);
+  sc= new NetAddress("127.0.0.1", 57120);
+}
+
+void draw() {
+  if((pSensors != null)&&(sensors != null)) { 
+
+    //send to OSC the sensor values
+     OscMessage msg= new OscMessage("/ir");
+     for (int i=0; i < sensors.length; i++ ){
+       sensors_map[i]=map(sensors[i],-32768,32767,0,1);
+       msg.add(sensors_map[i]);
+       //println(i, sensors_map[i]);  //debug
+    }
+    oscP5.send(msg, sc);
+    str= "";
+
+    
+    background(20);
+    stroke(0, 100, 200);
+    fill(255);
+    textSize(20);
+//    translate(10, 10, 0);
+//    text (" rotateX(" + rotx +" pi)"+" , rotateY("+roty+" pi)"+" , rotateZ("+rotz+" pi)", 0,10);
+     
+ //   translate(100, 00, 0); // center drawing start point in screen
+  
+//DRAW CUBES
+/*
+    for (int j=0; j < sensors.length; j++ ){
+      stroke(200,200,150);
+      fill(25*j+50, 25*j+70, 15*j+150);
+      rect (j*100, (sensors_map[j]*100), 20 ,20 );
+      text (sensor_number[j],j*100,110);
+    }
+*/
+
+
+//DRAW LINES
+    // Read the array from the end to the
+    // beginning to avoid overwriting the data
+    for (int j = 0; j < sensors.length; j++ ){
+ //     for (int i = y[j].length-1; i > 0; i--) {
+ //       y[j][i] = y[j][i-1];
+ //     }
+  //----text supressed for performance ---------
+  //    text (sensor_number[j],10,((j+2)*interLine));
+      // Add new values to the beginning
+      y[j][index] = sensors_map[j];
+      // Display each pair of values as a line color
+      stroke(25*j+50, 25*j+70, 15*j+80);
+      fill(25*j+50, 25*j+70, 15*j+80);
+
+      for (int i = 1; i < y[j].length; i++) {
+        line(i, y[j][(index+i+1)%width]*interLine+((j+2)*interLine), i-1, y[j][(index+i)%width]*interLine+((j+2)*interLine));
+      }
+    } 
+    index += 1;
+    index = index%width;
+  }
+}
+
+
+
+void serialEvent(Serial myPort) {
+
+  // read the serial buffer:
+  String myString = myPort.readStringUntil(linefeed);
+
+  // if you got any bytes other than the linefeed:
+  if (myString != null) {
+
+    myString = trim(myString);
+
+    // split the string at the commas
+    // and convert the sections into integers:
+/////????michel
+    pSensors = sensors;
+    sensors = float(split(myString, ','));
+
+    // print out the values you got:    
+//    for (int sensorNum = 0; sensorNum < sensors.length; sensorNum++) {
+//      print("Sensor " + sensorNum + ": " + sensors[sensorNum] + "\t");
+//    }
+    
+    // add a linefeed after all the sensor values are printed:
+    //println();
+  }
+}
