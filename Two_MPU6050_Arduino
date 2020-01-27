@@ -1,0 +1,132 @@
+// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE
+// is used in I2Cdev.h
+#include "Wire.h"
+
+// I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h
+// for both classes must be in the include path of your project
+#include "I2Cdev.h"
+#include "MPU6050.h"
+
+// class default I2C address is 0x68
+// specific I2C addresses may be passed as a parameter here
+// AD0 low = 0x68 (default for InvenSense evaluation board)
+// AD0 high = 0x69
+//MPU6050 accelgyro;
+MPU6050 accelgyroIC1(0x68);
+MPU6050 accelgyroIC2(0x69);
+
+int16_t ax1, ay1, az1;
+int16_t gx1, gy1, gz1;
+
+int16_t ax2, ay2, az2;
+int16_t gx2, gy2, gz2;
+
+float fax1, fay1, faz1;
+float fgx1, fgy1, fgz1;
+float fax2, fay2, faz2;
+float fgx2, fgy2, fgz2;
+
+#define LED_PIN 13
+bool blinkState = false;
+
+void setup() {
+// join I2C bus (I2Cdev library doesn't do this automatically)
+Wire.begin();
+
+// initialize serial communication
+// (38400 chosen because it works as well at 8MHz as it does at 16MHz,
+// it's really up to you depending on your project)
+Serial.begin(115200);
+
+// initialize device
+Serial.println("Initializing I2C devices...");
+//accelgyro.initialize();
+accelgyroIC1.initialize();
+accelgyroIC2.initialize();
+
+// verify connection
+Serial.println("Testing device connections...");
+Serial.println(accelgyroIC1.testConnection() ? "MPU6050 #1 connection successful" : "MPU6050 connection failed");
+Serial.println(accelgyroIC2.testConnection() ? "MPU6050 #2 connection successful" : "MPU6050 connection failed");
+
+// configure Arduino LED for
+pinMode(LED_PIN, OUTPUT);
+}
+
+void loop() {
+// read raw accel/gyro measurements from device
+accelgyroIC1.getMotion6(&ax1, &ay1, &az1, &gx1, &gy1, &gz1);
+accelgyroIC2.getMotion6(&ax2, &ay2, &az2, &gx2, &gy2, &gz2);
+
+// these methods (and a few others) are also available
+//accelgyro.getAcceleration(&ax, &ay, &az);
+//accelgyro.getRotation(&gx, &gy, &gz);
+
+
+/* for derial visualisation */
+/*
+// display tab-separated accel/gyro x/y/z values
+Serial.print("MPU1:\t");
+Serial.print(ax1); Serial.print("\t");
+Serial.print(ay1); Serial.print("\t");
+Serial.print(az1); Serial.print("\t");
+Serial.print(gx1); Serial.print("\t");
+Serial.print(gy1); Serial.print("\t");
+Serial.println(gz1);
+
+// display tab-separated accel/gyro x/y/z values
+Serial.print("                                             MPU2:");
+Serial.print(ax2); Serial.print("\t");
+Serial.print(ay2); Serial.print("\t");
+Serial.print(az2); Serial.print("\t");
+Serial.print(gx2); Serial.print("\t");
+Serial.print(gy2); Serial.print("\t");
+Serial.println(gz2);
+*/
+
+// I send float to Processing.. historical reasons
+fax1 = (float) ax1;
+fay1 = (float) ay1;
+faz1 = (float) az1;
+fgx1 = (float) gx1;
+fgy1 = (float) gy1;
+fgz1 = (float) gz1;
+
+fax2 = (float) ax2;
+fay2 = (float) ay2;
+faz2 = (float) az2;
+fgx2 = (float) gx2;
+fgy2 = (float) gy2;
+fgz2 = (float) gz2;
+
+  
+// for communication with Processing
+Serial.print(fax2); Serial.print(F(","));
+Serial.print(fay2); Serial.print(F(","));
+Serial.print(faz2); Serial.print(F(","));
+Serial.print(fgx2); Serial.print(F(","));
+Serial.print(fgy2); Serial.print(F(","));
+Serial.print(fgz2); Serial.print(F(","));
+Serial.print(fax1); Serial.print(F(","));
+Serial.print(fay1); Serial.print(F(","));
+Serial.print(faz1); Serial.println(F(""));
+
+/*
+// for communication with Supercollider
+Serial.print(fax2); Serial.print(F(" "));
+Serial.print(fay2); Serial.print(F(" "));
+Serial.print(faz2); Serial.print(F(" "));
+Serial.print(fgx2); Serial.print(F(" "));
+Serial.print(fgy2); Serial.print(F(" "));
+Serial.print(fgz2); Serial.print(F(" "));
+Serial.print(fax1); Serial.print(F(" "));
+Serial.print(fay1); Serial.print(F(" "));
+Serial.print(faz1); Serial.println(F(""));
+*/
+//to reduce CPU load
+delay(150);
+
+// blink LED to indicate activity
+blinkState = !blinkState;
+digitalWrite(LED_PIN, blinkState);
+}
