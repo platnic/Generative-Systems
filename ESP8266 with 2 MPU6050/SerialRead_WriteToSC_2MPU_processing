@@ -1,11 +1,10 @@
+// The code gets 2 MPU6050 data to Processing to view and then to OSC
+
 import processing.serial.*;
 import oscP5.*;
 import netP5.*;
 OscP5 oscP5;
 NetAddress sc;
-
-// Code originally by Odis Harkins
-// http://odisharkins.com/robotics/gyro-arduino-processing/
 
 Serial myPort;       
 int linefeed = 10;   // Linefeed in ASCII
